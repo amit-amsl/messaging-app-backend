@@ -3,7 +3,10 @@ const bcrypt = require("bcryptjs");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
+const { isProduction } = require("../app");
 require("dotenv").config();
+
+const THREE_HOURS = 1000 * 60 * 60 * 3;
 
 const userLogin = asyncHandler(async (req, res) => {
   const { username, password } = req.body;
@@ -37,10 +40,11 @@ const userLogin = asyncHandler(async (req, res) => {
   };
 
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
-  const twoHours = 1000 * 60 * 60 * 2;
-  res.cookie("authToken", token, {
+  res.cookie("leaf-authToken", token, {
     httpOnly: true,
-    expires: new Date(Date.now() + twoHours),
+    secure: isProduction() ? true : false,
+    ...(isProduction() && { sameSite: "none" }),
+    expires: new Date(Date.now() + THREE_HOURS),
   });
   return res
     .status(200)
@@ -81,10 +85,11 @@ const userRegistration = asyncHandler(async (req, res) => {
   const token = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: "2h",
   });
-  const twoHours = 1000 * 60 * 60 * 2;
-  res.cookie("authToken", token, {
+  res.cookie("leaf-authToken", token, {
     httpOnly: true,
-    expires: new Date(Date.now() + twoHours),
+    secure: isProduction() ? true : false,
+    ...(isProduction() && { sameSite: "none" }),
+    expires: new Date(Date.now() + THREE_HOURS),
   });
   return res.status(201).json({
     message: "User has been created successfully!",
@@ -93,14 +98,15 @@ const userRegistration = asyncHandler(async (req, res) => {
 });
 
 const userLogout = (req, res) => {
-  const authToken = req.cookies["authToken"];
+  const authToken = req.cookies["leaf-authToken"];
   if (!authToken) {
     return res.status(400).json({ message: "Bad request" });
   }
 
-  res.cookie("authToken", "logout", {
+  res.clearCookie("leaf-authToken", {
     httpOnly: true,
-    expires: new Date(Date.now() + 1 * 1000),
+    secure: isProduction() ? true : false,
+    ...(isProduction() && { sameSite: "none" }),
   });
   return res
     .status(200)

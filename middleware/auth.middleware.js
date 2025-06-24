@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 require("dotenv").config();
 
 const userAuthenticationCheck = asyncHandler(async (req, res, next) => {
-  const authToken = req.cookies["authToken"];
+  const authToken = req.cookies["leaf-authToken"];
   if (!authToken) {
     return res.status(401).json({ message: "Invalid cookie", user: null });
   }

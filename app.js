@@ -6,23 +6,35 @@ const cors = require("cors");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+const { rateLimit } = require("express-rate-limit");
 const { socketAuthCheck } = require("./middleware/auth.middleware");
 
+exports.isProduction = () => {
+  return process.env.NODE_ENV === "production";
+};
+
+const PORT = process.env.PORT || 3000;
 const app = express();
 const httpServer = createServer(app);
-const ORIGIN_ADDR = "http://localhost:5173";
+
 const io = new Server(httpServer, {
   cors: {
-    origin: ORIGIN_ADDR,
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   },
+});
+
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 40,
+  validate: { xForwardedForHeader: false },
 });
 
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(
   cors({
-    origin: ORIGIN_ADDR,
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   })
 );
@@ -30,10 +42,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // parses form payloads and sets it to the `req.body`
 app.use(cookieParser());
 
+if (this.isProduction()) app.use(limiter);
+
 const authRoutes = require("./routes/auth.routes");
 const usersRoutes = require("./routes/users.routes");
 const chatsRoutes = require("./routes/chats.routes");
 
+app.get("/api/health", (_req, res) => {
+  res.json({ healthy: true });
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/chats", chatsRoutes);
@@ -151,5 +168,4 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Something went wrong!" });
 });
 
-const PORT = 3000;
 httpServer.listen(PORT, () => console.log(`listening on port ${PORT}!`));
