@@ -416,31 +416,44 @@ const updateGroupChatById = asyncHandler(async (req, res) => {
   return res.status(200).json(updatedGroupChat);
 });
 
-/* TODO: validate that userId is actually an admin */
 const updateGroupChatAdmins = asyncHandler(async (req, res) => {
-  const { userId } = req.body;
+  const { userId: updateByUserId } = req.user;
+  const { userId: updateOnUserId } = req.body;
   const { groupId } = req.params;
-  const userExistsInGroupAndAdmin = await prisma.usersOnChats.findUnique({
-    where: {
-      userId_chatId: { userId, chatId: groupId },
-      isAdmin: true,
-    },
-  });
-  if (!userExistsInGroupAndAdmin) {
+
+  const updateByUserExistsInGroupAndAdmin =
+    await prisma.usersOnChats.findUnique({
+      where: {
+        userId_chatId: { userId: updateByUserId, chatId: groupId },
+        isAdmin: true,
+      },
+    });
+  if (!updateByUserExistsInGroupAndAdmin) {
     return res.status(400).json({
       message: "User doesn't exist in group or isn't a group admin!",
-      userId,
+      updateByUserId,
     });
   }
-  const updatedUser = await prisma.usersOnChats.update({
+  const updateOnUserExists = await prisma.usersOnChats.findUnique({
     where: {
-      userId_chatId: { userId, chatId: groupId },
-    },
-    data: {
-      isAdmin: !userExistsInGroup.isAdmin,
+      userId_chatId: { userId: updateOnUserId, chatId: groupId },
     },
   });
-  return res.status(200).json(updatedUser);
+  if (!updateOnUserExists) {
+    res.status(400).json({
+      message: "Update failed because user doesn't exist in group",
+      updateByUserId,
+    });
+  }
+  await prisma.usersOnChats.update({
+    where: {
+      userId_chatId: { userId: updateOnUserId, chatId: groupId },
+    },
+    data: {
+      isAdmin: !updateOnUserExists.isAdmin,
+    },
+  });
+  return res.status(200).json();
 });
 
 const handleGroupChatMemberLeave = asyncHandler(async (req, res) => {
