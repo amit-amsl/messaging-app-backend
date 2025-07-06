@@ -1,7 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../utils/db");
 const jwt = require("jsonwebtoken");
 const { isProduction } = require("../app");
 require("dotenv").config();

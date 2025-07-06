@@ -1,8 +1,7 @@
-const asyncHandler = require("express-async-handler");
-const { PrismaClient } = require("@prisma/client");
 const { uploadImageToCloudinary, cloudinary } = require("../utils/cloudinary");
+const asyncHandler = require("express-async-handler");
+const prisma = require("../utils/db");
 const sharp = require("sharp");
-const prisma = new PrismaClient();
 
 const getAvailableUsersForPrivateChattingByUserId = asyncHandler(
   async (req, res) => {

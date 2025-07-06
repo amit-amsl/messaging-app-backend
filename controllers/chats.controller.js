@@ -1,6 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../utils/db");
 
 const getPrivateChatsByUserId = asyncHandler(async (req, res) => {
   const { userId } = req.user;

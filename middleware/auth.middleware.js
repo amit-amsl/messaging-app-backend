@@ -1,7 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../utils/db");
 require("dotenv").config();
 
 const userAuthenticationCheck = asyncHandler(async (req, res, next) => {
