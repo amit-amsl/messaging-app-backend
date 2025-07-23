@@ -6,6 +6,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+const cookie = require("cookie");
 const { rateLimit } = require("express-rate-limit");
 const { socketAuthCheck } = require("./middleware/auth.middleware");
 
@@ -59,17 +60,16 @@ const connectedSocketsUserIdMap = new Map();
 const { SOCKET_EVENTS } = require("./utils/socket-events");
 
 io.use(async (socket, next) => {
-  if (!socket.handshake.headers.cookie) {
+  const cookies = cookie.parse(socket.handshake.headers.cookie);
+  if (!cookies["leaf-authToken"]) {
     return next(new Error("Token invalid!"));
+  }
+  const authVerify = await socketAuthCheck(cookies["leaf-authToken"]);
+  if (authVerify) {
+    socket.userId = authVerify.userId;
+    next();
   } else {
-    const authToken = socket.handshake.headers.cookie.split("=");
-    const authVerify = await socketAuthCheck(authToken[1]);
-    if (authVerify) {
-      socket.userId = authVerify.userId;
-      next();
-    } else {
-      return next(new Error("Auth invalid!"));
-    }
+    return next(new Error("Auth invalid!"));
   }
 });
 
